@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+
+    <title></title>
+</head>
+
+<body>
+    <h4 class="talking_to"></h4>
+            <div class="user-input">
+                <input type="text" placeholder="Who do you wnana talk to?">
+                <button class="user-input-button">+</button>
+            </div>
+
+    <div class="iphone">
+        <div class="border">
+            
+            <form class="chat">
+                <span></span>
+                <div class="messages" id="adobewordpress">
+                </div>
+                <input type="text" placeholder="Your message">
+                <input type="submit" value="Send">
+            </form>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+// var domain = "ec2-35-182-247-192.ca-central-1.compute.amazonaws.com"
+// IN YOUR SHELL RUN:
+// ssh -R 5000:localhost:5000 ubuntu@ec2-35-182-247-192.ca-central-1.compute.amazonaws.com -i "~/Downloads/demo-key.pem"
+// ssh -R 8000:localhost:8000 ubuntu@ec2-35-182-247-192.ca-central-1.compute.amazonaws.com -i "~/Downloads/demo-key.pem"
+ 
+var talingto = null
+
+ $(".user-input-button").on('click', function(event) {
+     event.preventDefault();
+     var talingto = $(".user-input input").val()
+     console.log(talingto)
+     $(".talking_to").text(talingto)
+     fetchMessages(talingto)
+     /* Act on the event */
+ });
+
+
+var domain = "localhost"
+
+$(document).ready(function() {
+    // document.domain location.port
+    
+    var port = 5000
+    var socket = io.connect('http://' + domain + ':' + port + '/test');
+
+    socket.on("new_message", function() {
+        setTimeout(function() {
+            clearMessages()
+            fetchMessages(talingto)
+            console.log("NEW MESSAGE!")
+        }, 3000)
+    })
+
+
+    socket.on('my response', function(msg) {
+        clearMessages()
+        fetchMessages(talingto)
+        console.log("UPDATE")
+    });
+
+    setInterval(function() {
+        socket.emit("my event", { "data": "test" });
+    }, 1000);
+
+});
+
+
+function scrollDown() {
+    var focusBottom = document.getElementById("adobewordpress");
+    focusBottom.scrollTop = focusBottom.scrollHeight;
+}
+
+function Message(type, text, time) {
+    this.text = text;
+    this.time = time;
+    this.toHTML = function() {
+        return '<div class="message"><div class="myMessage"><p>' + this.text + '</p><date>' + this.time + '</date></div></div>'
+    }
+
+}
+
+$("input").keypress(function(event) {
+    if (event.which == 13) {
+        event.preventDefault();
+        $('form.chat input[type="submit"]').click();
+    }
+});
+$('form.chat input[type="submit"]').click(function(event) {
+    event.preventDefault();
+    var message = $('form.chat input[type="text"]').val();
+
+    $.post('http://'+domain+':5000/send', { param1: message }, function(data, textStatus, xhr) {
+        /*optional stuff to do after success */
+    });
+
+    if ($('form.chat input[type="text"]').val()) {
+        var d = new Date();
+        var clock = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+        var month = d.getMonth() + 1;
+        var day = d.getDate();
+        var currentDate =
+            (('' + day).length < 2 ? '0' : '') + day + '.' +
+            (('' + month).length < 2 ? '0' : '') + month + '.' +
+            d.getFullYear() + '&nbsp;&nbsp;' + clock;
+
+        var msg = new Message(message, currentDate)
+        // $('form.chat div.messages').append('<div class="message"><div class="myMessage"><p>' + message+ '</p><date>' + currentDate + '</date></div></div>');
+        setTimeout(function() {
+            $('form.chat > span').addClass('spinner');
+        }, 100);
+        setTimeout(function() {
+            $('form.chat > span').removeClass('spinner');
+        }, 2000);
+    }
+    $('form.chat input[type="text"]').val('');
+    fetchMessages();
+});
+
+
+fetchMessages = function(from) {
+    $.post('http://'+domain+':5000/messages', { param1: from }, function(data, textStatus, xhr) {
+        data = JSON.parse(data)[0]
+        $.each(data, function(index, el) {
+            clas = "fromThem"
+            if (el['from'] == "ME") {
+                clas = "myMessage"
+            }
+            $('form.chat div.messages').append('<div class="message"><div class="' + clas + '"><p>' + el['message'] + '</p><date>' + el['time'] + '</date></div></div>')
+        });
+        scrollDown()
+    });
+}
+
+clearMessages = function() {
+    $('form.chat div.messages').html("")
+}
+
+
+/* DEMO */
+if (parent == top) {
+    $('a.article').show();
+}
+</script>
+
+</html>
+<!-- DEMO -->
+<!-- <a href="http://www.adobewordpress.com/iphone-mesajlar-ekrani" target="_blank" class="article" style="display:none">Read Article</a> -->
