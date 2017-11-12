@@ -18,7 +18,7 @@ conn = DATA.conn
 poller = DataPoller(conn)
 Mess = imessageRubyWrapper()
 
-DEFAULT_ACCOUNT = "3478344775"
+DEFAULT_ACCOUNT = " YOUR PHONE NUMBER FOR TESTING - NO SPACES NO DASHES "
 
 @app.after_request
 def after_request(response):
