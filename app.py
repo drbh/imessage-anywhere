@@ -13,12 +13,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-DATA = dataGrabber()
+DATA = DataGrabber()
 conn = DATA.conn
 poller = DataPoller(conn)
-Mess = imessageRubyWrapper()
+Mess = ImessageRubyWrapper()
 
-DEFAULT_ACCOUNT = " YOUR PHONE NUMBER FOR TESTING - NO SPACES NO DASHES "
+client_needs_data = False
 
 @app.after_request
 def after_request(response):
@@ -31,23 +31,39 @@ def after_request(response):
 def send():
     """ { "message": "hey there!" } """
     text = request.form['param1']
-    contact = DEFAULT_ACCOUNT
-    print request.form['param1']
-    Mess.command(text, contact)
+    contact = request.form['param2']
+    print text, "to", contact
+    if text != "":
+        Mess.command(text, contact)
     return json.dumps({"status":"sent"})
 
 @app.route("/messages", methods=['POST', 'OPTIONS'])
 def messages():
     """ { "handle_id": "5" } """
     print request.form['param1']
-    list_messages = DATA.find_get_messages(request.form['param1'])
-    return json.dumps(list_messages)
+    if request.form['param1'] != "":
+        list_messages = DATA.find_get_messages(request.form['param1'])
+        return json.dumps(list_messages)
+    return json.dumps([])
 
 @socketio.on('my event', namespace='/test')
 def test_message(message):
-    if poller.check_new_message():
-        print "SHOULD UPDATE"
+    global client_needs_data
+    if client_needs_data:
+        print "Client still needs data"
         emit('new_message')
+
+    if poller.check_new_message() is True and client_needs_data is False:
+        client_needs_data = True
+        print "Update sent to client"
+        emit('new_message')
+
+@socketio.on('updated_messages', namespace='/test')
+def updated_messages():
+    global client_needs_data
+    print "Update filled on client"
+    client_needs_data = False
+
 
 @socketio.on('connect', namespace='/test')
 def test_connect():

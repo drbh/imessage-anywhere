@@ -2,67 +2,102 @@
 <html>
 
 <head>
+
+<link rel="apple-touch-icon" sizes="57x57" href="/static/favicon/apple-icon-57x57.png">
+<link rel="apple-touch-icon" sizes="60x60" href="/static/favicon/apple-icon-60x60.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/static/favicon/apple-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="76x76" href="/static/favicon/apple-icon-76x76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="/static/favicon/apple-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="/static/favicon/apple-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/static/favicon/apple-icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/static/favicon/apple-icon-152x152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-icon-180x180.png">
+<link rel="icon" type="image/png" sizes="192x192"  href="/static/favicon/android-icon-192x192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/static/favicon/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+<link rel="manifest" href="/static/favicon/manifest.json">
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="/static/favicon/ms-icon-144x144.png">
+<meta name="theme-color" content="#ffffff">
+
+
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-
-    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>iMessageAnywhere</title>
 </head>
 
 <body>
-    <h4 class="talking_to"></h4>
-            <div class="user-input">
-                <input type="text" placeholder="Who do you wnana talk to?">
-                <button class="user-input-button">+</button>
-            </div>
-
+    <div class="navbar">
+        <a id="contacts"></a>
+        <p class="talking_to"></p>
+    </div>
     <div class="iphone">
         <div class="border">
-            
             <form class="chat">
+                <div class="user-input">
+                    <input type="text" placeholder="Phone Number (no spaces - no dashes)">
+                    <a class="user-input-button">+</a>
+                </div>
                 <span></span>
                 <div class="messages" id="adobewordpress">
                 </div>
-                <input type="text" placeholder="Your message">
+                <input type="text" placeholder="Your message" id="my_message_to_send">
                 <input type="submit" value="Send">
             </form>
         </div>
     </div>
 </body>
 <script type="text/javascript">
-
 var talingto = null
 
- $(".user-input-button").on('click', function(event) {
-     event.preventDefault();
-     var talingto = $(".user-input input").val()
-     console.log(talingto)
-     $(".talking_to").text(talingto)
-     fetchMessages(talingto)
-     /* Act on the event */
- });
+var most_recent = null
+
+$("#contacts").html("close")
+
+$('#contacts').click(function () {
+    if( $("#contacts").text() == "contact" ){
+        $("#contacts").html("close")
+    } else{
+        $("#contacts").html("contact")
+    }
+    
+    $(".user-input").toggle()
+});
+
+$(".user-input-button").on('click', function(event) {
+    event.preventDefault();
+    var talingto = $(".user-input input").val()
+    $("#contacts").html("contact")
+    $(".talking_to").text(talingto)
+    $('.user-input').css("display","none")
+    fetchMessages(talingto)
+    /* Act on the event */
+});
 
 
-var domain = "localhost"
+var domain = document.domain//"localhost"
 
 $(document).ready(function() {
     // document.domain location.port
-    
+
     var port = 5000
     var socket = io.connect('http://' + domain + ':' + port + '/test');
 
     socket.on("new_message", function() {
-        setTimeout(function() {
-            clearMessages()
-            fetchMessages(talingto)
-            console.log("NEW MESSAGE!")
-        }, 3000)
+        clearMessages()
+        var talingto = $(".user-input input").val()
+        fetchMessages(talingto)
+        console.log("NEW MESSAGE!")
+        socket.emit("updated_messages")
     })
 
 
     socket.on('my response', function(msg) {
         clearMessages()
+        var talingto = $(".user-input input").val()
         fetchMessages(talingto)
         console.log("UPDATE")
     });
@@ -96,13 +131,14 @@ $("input").keypress(function(event) {
 });
 $('form.chat input[type="submit"]').click(function(event) {
     event.preventDefault();
-    var message = $('form.chat input[type="text"]').val();
-
-    $.post('http://'+domain+':5000/send', { param1: message }, function(data, textStatus, xhr) {
+    var message = $('#my_message_to_send').val();
+    var contact = $(".user-input input").val()
+    $.post('http://' + domain + ':5000/send', { param1: message, param2: contact}, function(data, textStatus, xhr) {
+        console.log(data)
         /*optional stuff to do after success */
     });
 
-    if ($('form.chat input[type="text"]').val()) {
+    if ($('#my_message_to_send').val()) {
         var d = new Date();
         var clock = d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
         var month = d.getMonth() + 1;
@@ -113,7 +149,6 @@ $('form.chat input[type="submit"]').click(function(event) {
             d.getFullYear() + '&nbsp;&nbsp;' + clock;
 
         var msg = new Message(message, currentDate)
-        // $('form.chat div.messages').append('<div class="message"><div class="myMessage"><p>' + message+ '</p><date>' + currentDate + '</date></div></div>');
         setTimeout(function() {
             $('form.chat > span').addClass('spinner');
         }, 100);
@@ -121,13 +156,14 @@ $('form.chat input[type="submit"]').click(function(event) {
             $('form.chat > span').removeClass('spinner');
         }, 2000);
     }
-    $('form.chat input[type="text"]').val('');
-    fetchMessages();
+    $('#my_message_to_send').val('');
+    var talingto = $(".user-input input").val()
+    fetchMessages(talingto);
 });
 
 
 fetchMessages = function(from) {
-    $.post('http://'+domain+':5000/messages', { param1: from }, function(data, textStatus, xhr) {
+    $.post('http://' + domain + ':5000/messages', { param1: from }, function(data, textStatus, xhr) {
         data = JSON.parse(data)[0]
         $.each(data, function(index, el) {
             clas = "fromThem"

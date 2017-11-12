@@ -7,7 +7,7 @@ import datetime
 
 USERNAME = os.popen('whoami').read().strip()
 
-class imessageRubyWrapper(object):
+class ImessageRubyWrapper(object):
     """docstring for ClassName"""
     def __init__(self):
         self.base = "imessage"
@@ -26,7 +26,7 @@ class imessageRubyWrapper(object):
         os.system(cmd)
 
 
-class dataGrabber(object):
+class DataGrabber(object):
     """docstring for ClassName"""
     def __init__(self):
         print '/Users/'+USERNAME+'/Library/Messages/chat.db'
